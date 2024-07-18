@@ -9,9 +9,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ import android.util.JsonReader;
 import android.util.JsonToken;
 import android.view.View;
 import android.webkit.SslErrorHandler;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -119,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         mywebView.loadUrl("https://radioir.ru/");
         isConnected = isConnected(this.getBaseContext());
         if (!isConnected) {
-            Toast.makeText(this.getBaseContext(), "You are offline ", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this.getBaseContext(), "You are offline ", Toast.LENGTH_SHORT).show();
 
 //            String unencodedHtml =
 //                    "<html><body>'%23' is the percent code for ‘#‘ </body></html>";
@@ -131,6 +134,11 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         WebSettings webSettings=mywebView.getSettings();
 
         webSettings.setJavaScriptEnabled(true);
+
+
+
+
+
     }
 
     public static boolean isConnected(Context context) {
@@ -452,19 +460,37 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 
 //            Toast.makeText(MainActivity.this, "Unexpected error occurred.Reload page again1.", Toast.LENGTH_SHORT).show();
 
-
+            String unencodedHtml1 =
+                    "<html><body style='background-color: black;'>" +
+                            "<h3 style = 'color: white;position:fixed; top:50%; left:50%; text-align:center;vertical-align: middle;transform: translate(-50%, -50%);'>" +
+                            "   не удается связаться с сервером1" +
+                            "</h3></body></html>";
 
             String encodedHtml = Base64.encodeToString(unencodedHtml.getBytes(),
                     Base64.NO_PADDING);
-            view.loadData(encodedHtml, "text/html", "base64");
+
+
+
+
+//            Toast.makeText(MainActivity.this, " error ."  + error.getErrorCode() + " " + error.getDescription(), Toast.LENGTH_SHORT).show();
+            if (error.getErrorCode() == -2)
+                view.loadData(encodedHtml, "text/html", "base64");
 
         }
 
         @Override
         public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
+
+
+            String unencodedHtml2 =
+                    "<html><body style='background-color: black;'>" +
+                            "<h3 style = 'color: white;position:fixed; top:50%; left:50%; text-align:center;vertical-align: middle;transform: translate(-50%, -50%);'>" +
+                            "   не удается связаться с сервером 2" +
+                            "</h3></body></html>";
+
 //            Toast.makeText(MainActivity.this, "Unexpected error occurred.Reload page again2.", Toast.LENGTH_SHORT).show();
-            String encodedHtml = Base64.encodeToString(unencodedHtml.getBytes(),
+            String encodedHtml = Base64.encodeToString(unencodedHtml2.getBytes(),
                     Base64.NO_PADDING);
             view.loadData(encodedHtml, "text/html", "base64");
 //            String unencodedHtml =
@@ -479,7 +505,13 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             super.onReceivedSslError(view, handler, error);
 //            Toast.makeText(MainActivity.this, "Unexpected SSL error occurred.Reload page again3.", Toast.LENGTH_SHORT).show();
-            String encodedHtml = Base64.encodeToString(unencodedHtml.getBytes(),
+
+            String unencodedHtml3 =
+                    "<html><body style='background-color: black;'>" +
+                            "<h3 style = 'color: white;position:fixed; top:50%; left:50%; text-align:center;vertical-align: middle;transform: translate(-50%, -50%);'>" +
+                            "   не удается связаться с сервером 3" +
+                            "</h3></body></html>";
+            String encodedHtml = Base64.encodeToString(unencodedHtml3.getBytes(),
                     Base64.NO_PADDING);
             view.loadData(encodedHtml, "text/html", "base64");
 //            String unencodedHtml =
@@ -488,6 +520,34 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 //                    Base64.NO_PADDING);
 //            view.loadData(encodedHtml, "text/html", "base64");
 
+        }
+
+        private boolean appInstalledOrNot(String uri) {
+            PackageManager pm = getPackageManager();
+            try {
+                pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+                return true;
+            } catch (PackageManager.NameNotFoundException e) {
+            }
+
+            return false;
+        }
+
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            final Uri uri = request.getUrl();
+
+            if( URLUtil.isNetworkUrl(uri.toString()) ) {
+                return false;
+            }
+            if (appInstalledOrNot(uri.toString())) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                startActivity( intent );
+            } else {
+                // do something if app is not installed
+            }
+            return true;
         }
 
     }
