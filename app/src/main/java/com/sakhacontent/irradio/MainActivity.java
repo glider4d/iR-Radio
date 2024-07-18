@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
@@ -536,18 +537,67 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+
             final Uri uri = request.getUrl();
 
+//            Toast.makeText(MainActivity.this, "app installed." + request.getUrl().toString(), Toast.LENGTH_SHORT).show();
+//
+//            String headerReceiver = "";// Replace with your message.
+//            String bodyMessageFormal = "";// Replace with your message.
+//            String whatsappContain = headerReceiver + bodyMessageFormal;
+
+
+            /*
+            String trimToNumner = "+79245697061"; //10 digit number
+            Intent intent = new Intent ( Intent.ACTION_VIEW );
+            intent.setData ( Uri.parse ( "https://wa.me/" + trimToNumner + "/?text=" + "" ) );*/
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(uri);
+            startActivity ( intent );
+            return true;
+            /*
+            PackageManager pm =  getPackageManager();
+
+            try
+            {
+                // Raise exception if whatsapp doesn't exist
+                PackageInfo info = pm.getPackageInfo("com.whatsapp", PackageManager.GET_META_DATA);
+
+                Intent waIntent = new Intent(Intent.ACTION_SEND);
+                waIntent.setType("text/plain");
+                waIntent.setPackage("com.whatsapp");
+                waIntent.putExtra(Intent.EXTRA_TEXT, "YOUR TEXT");
+                startActivity(waIntent);
+            }
+            catch (PackageManager.NameNotFoundException e)
+            {
+                Toast.makeText(MainActivity.this, "Please install whatsapp app", Toast.LENGTH_SHORT)
+                        .show();
+            }
+            return true;
+            */
+            /*
+            Toast.makeText(MainActivity.this, "app installed.", Toast.LENGTH_SHORT).show();
+            Intent intent2 = new Intent(Intent.ACTION_VIEW, uri);
+            startActivity( intent2 );
+
+            return true;
+            */
+            /*
             if( URLUtil.isNetworkUrl(uri.toString()) ) {
+                Toast.makeText(MainActivity.this, "isNetworkUrl. = " + uri, Toast.LENGTH_SHORT).show();
                 return false;
             }
             if (appInstalledOrNot(uri.toString())) {
+                Toast.makeText(MainActivity.this, "app installed.", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                 startActivity( intent );
             } else {
+                Toast.makeText(MainActivity.this, "app is not installed.", Toast.LENGTH_SHORT).show();
                 // do something if app is not installed
             }
-            return true;
+            return true;*/
+
         }
 
     }
