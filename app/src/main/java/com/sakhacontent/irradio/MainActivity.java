@@ -1,6 +1,7 @@
 package com.sakhacontent.irradio;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import android.annotation.TargetApi;
 import android.app.NotificationChannel;
@@ -9,9 +10,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -21,9 +20,11 @@ import android.os.Bundle;
 import android.util.Base64;
 import android.util.JsonReader;
 import android.util.JsonToken;
-import android.view.View;
+import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
-import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -32,7 +33,6 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
 
 import com.sakhacontent.irradio.Services.OnClearFromRecentService;
 
@@ -42,9 +42,15 @@ import java.io.StringReader;
 
 public class MainActivity extends AppCompatActivity implements Playable{//, Runnable {
 
-//ssk11    ImageButton play;
-//ssk11    TextView title;
-//    Handler handler = new Handler();
+
+    private class JavaScriptInterface {
+        @JavascriptInterface
+        public void callback(String value) {
+            Log.d("JS",value);
+        }
+    }
+
+
 
     NotificationManager notificationManager;
 
@@ -61,6 +67,8 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         mywebView =(WebView)findViewById(R.id.webview);
         //mywebView.setWebViewClient(new WebViewClient());
 //        mywebView.setWebChromeClient(new WebChromeClient()); //this
+
+        mywebView.setWebChromeClient(new WebChromeClient());
         mywebView.setWebViewClient(new MyWebViewClient() {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
@@ -79,32 +87,19 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 //                    webview.setEnabled(false);
 //                }
             }
-
             public void onPageFinished(WebView view, String url) {
 
 
-                // Page is done loading;
-                // hide the progress dialog and show the webview
-//                if (progressDialog.isShowing()) {
-//                    progressDialog.dismiss();
-//                    progressDialog = null;
-//                    webview.setEnabled(true);
-//                }
+//                Toast.makeText(getApplicationContext(), "onPageFinished", Toast.LENGTH_LONG).show();
+                mywebView.loadUrl("javascript:(function(){ " +
+                        "setInterval(function() { Bridge.getArtistName(document.getElementsByClassName('name')[1].innerHTML); },5000)" +
+                        "})()");
+
+//                view.loadUrl("javascript:setInterval(Bridge.calledFromJS, 1000); ");// Time in milliseconds
             }
 
-//            @Override
-//            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-//                if (isConnected) {
-//                    // return false to let the WebView handle the URL
-//                    return false;
-//                } else {
-//                    // show the proper "not connected" message
-//                    view.loadData(offlineMessageHtml, "text/html", "utf-8");
-//                    // return true if the host application wants to leave the current
-//                    // WebView and handle the url itself
-//                    return true;
-//                }
-//            }
+
+
             @Override
             public void onReceivedError (WebView view, int errorCode,
                                          String description, String failingUrl) {
@@ -117,10 +112,24 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 
 
         });
-
-
 //        mywebView.loadUrl("https://radio.dataworld.pro/");
+
+
+        WebSettings webSettings=mywebView.getSettings();
+
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setAllowFileAccess(true);
+
+
+        JavaScriptCallbackInterface javaScriptCallbackInterface = new JavaScriptCallbackInterface();
+        mywebView.addJavascriptInterface(javaScriptCallbackInterface, "Bridge");
+        mywebView.addJavascriptInterface(new JavaScriptInterface(), "javascriptinterface");
+
         mywebView.loadUrl("https://radioir.ru/");
+
+
         isConnected = isConnected(this.getBaseContext());
         if (!isConnected) {
 //            Toast.makeText(this.getBaseContext(), "You are offline ", Toast.LENGTH_SHORT).show();
@@ -132,15 +141,25 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 //            mywebView.loadData(encodedHtml, "text/html", "base64");
 
         }
-        WebSettings webSettings=mywebView.getSettings();
 
-        webSettings.setJavaScriptEnabled(true);
 
 
 
 
 
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     public static boolean isConnected(Context context) {
 
@@ -159,9 +178,23 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
     }
 
 
+    private void setTobBarColor(){
+        Window window = this.getWindow();
+
+        // clear FLAG_TRANSLUCENT_STATUS flag:
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+
+        // add FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS flag to the window
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+
+        // finally change the color
+        window.setStatusBarColor(ContextCompat.getColor(this,R.color.black));
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTobBarColor();
 
 //        requestWindowFeature(Window.FEATURE_NO_TITLE);
 //        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -183,6 +216,10 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         InitializeWebView();
 
         InitializeNotification();
+
+
+
+
 //        run();
         /*
         run();*/
@@ -214,7 +251,7 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getExtras().getString("actionname");
-
+            System.out.println("broadcastReceiver");
             switch (action){
                 case CreateNotification.ACTION_PREVIUOS:
                     onTrackPrevious();
@@ -259,7 +296,31 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 
     @Override
     public void onPlay() {
+
+//        mywebView.loadUrl("javascript:function()");
+
         mywebView.loadUrl("javascript:document.querySelector('.play').click()");
+        /*
+        mywebView.loadUrl("javascript:(function(){document.body.style.background = '#ccc';})()");
+        mywebView.loadUrl("javascript:(function(){ " +
+                "setTimeout(function() {document.body.style.background = '#000'; Bridge.calledFromJs(); document.body.style.background='#333';},5000)" +
+                "})()");
+        mywebView.loadUrl("javascript:javascriptinterface.callback('21');");
+//        mywebView.loadUrl("javascript:setInterval(Bridge.calledFromJS(), 1000); ");// Time in milliseconds
+//        mywebView.loadUrl("javascript:setInterval(() => Bridge.calledFromJS(), 2000);");
+        mywebView.loadUrl("javascript:(function(){ " +
+                "setInterval(function() {document.body.style.background = '#000'; Bridge.calledFromJs(); document.body.style.background='#333';},5000)" +
+                "})()");
+*/
+
+//                mywebView.loadUrl("javascript:(function(){alert('test');})()");
+
+//        mywebView.loadUrl("javascript:alert('test')");
+//        mywebView.loadUrl("javascript:(function(){ document.querySelector('.nav').addEventListener('click', (e) => {alert('call nav')}); })()");
+
+//        Toast.makeText(getApplicationContext(), "onPlay", Toast.LENGTH_LONG).show();
+
+
         CreateNotification.createNotification(MainActivity.this, R.drawable.ic_baseline_pause_38);
         isPlaying = true;
         isPause = false;
@@ -371,7 +432,7 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
             mywebView.evaluateJavascript(javascript, callback);
         } else {
 
-            mywebView.loadUrl("javascript:"+javascript);
+            mywebView.loadUrl("javascript:document.querySelector('.play').click()"+javascript);
 
         }
 
@@ -385,6 +446,8 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 
 
     public void checkStatus() {
+
+//        Toast.makeText(getApplicationContext(), "checkStatus", Toast.LENGTH_LONG).show();
         String javascript = "homePage.audio.paused";
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             // In KitKat+ you should use the evaluateJavascript method
@@ -418,6 +481,8 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
                     }
                 }
             };
+
+//            mywebView.evaluateJavascript("alert('test')", callback);
             mywebView.evaluateJavascript(javascript, callback);
         } else {
 
@@ -430,21 +495,7 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
 
 
 
-//    @Override
-//    public void run() {
-//        handler.postDelayed(this, 500);
-//        while (true)
-//        System.out.println("RUUUUUUUUUUUUUN");
-        /*
-        handler.postDelayed(this, 500);
-        checkStatus();
-        if (isPause){
-            CreateNotification.createNotification(MainActivity.this, R.drawable.ic_baseline_pause);
-        } else {
-            CreateNotification.createNotification(MainActivity.this, R.drawable.ic_play_arrow);
-        }*/
-    //homePage.audio.paused
-//    }
+
 
 
     private class MyWebViewClient extends WebViewClient {
@@ -494,18 +545,13 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
             String encodedHtml = Base64.encodeToString(unencodedHtml2.getBytes(),
                     Base64.NO_PADDING);
             view.loadData(encodedHtml, "text/html", "base64");
-//            String unencodedHtml =
-//                    "<html><body>error2</body></html>";
-//            String encodedHtml = Base64.encodeToString(unencodedHtml.getBytes(),
-//                    Base64.NO_PADDING);
-//            view.loadData(encodedHtml, "text/html", "base64");
+
 
         }
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             super.onReceivedSslError(view, handler, error);
-//            Toast.makeText(MainActivity.this, "Unexpected SSL error occurred.Reload page again3.", Toast.LENGTH_SHORT).show();
 
             String unencodedHtml3 =
                     "<html><body style='background-color: black;'>" +
@@ -515,11 +561,7 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
             String encodedHtml = Base64.encodeToString(unencodedHtml3.getBytes(),
                     Base64.NO_PADDING);
             view.loadData(encodedHtml, "text/html", "base64");
-//            String unencodedHtml =
-//                    "<html><body>error3</body></html>";
-//            String encodedHtml = Base64.encodeToString(unencodedHtml.getBytes(),
-//                    Base64.NO_PADDING);
-//            view.loadData(encodedHtml, "text/html", "base64");
+
 
         }
 
@@ -539,64 +581,16 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
 
             final Uri uri = request.getUrl();
-
-//            Toast.makeText(MainActivity.this, "app installed." + request.getUrl().toString(), Toast.LENGTH_SHORT).show();
+            if (uri.toString().equals("https://radioir.ru/")) {
+//                Toast.makeText(MainActivity.this, "." + uri.toString(), Toast.LENGTH_SHORT).show();
+                return false;
+            }
 //
-//            String headerReceiver = "";// Replace with your message.
-//            String bodyMessageFormal = "";// Replace with your message.
-//            String whatsappContain = headerReceiver + bodyMessageFormal;
-
-
-            /*
-            String trimToNumner = "+79245697061"; //10 digit number
-            Intent intent = new Intent ( Intent.ACTION_VIEW );
-            intent.setData ( Uri.parse ( "https://wa.me/" + trimToNumner + "/?text=" + "" ) );*/
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(uri);
             startActivity ( intent );
             return true;
-            /*
-            PackageManager pm =  getPackageManager();
 
-            try
-            {
-                // Raise exception if whatsapp doesn't exist
-                PackageInfo info = pm.getPackageInfo("com.whatsapp", PackageManager.GET_META_DATA);
-
-                Intent waIntent = new Intent(Intent.ACTION_SEND);
-                waIntent.setType("text/plain");
-                waIntent.setPackage("com.whatsapp");
-                waIntent.putExtra(Intent.EXTRA_TEXT, "YOUR TEXT");
-                startActivity(waIntent);
-            }
-            catch (PackageManager.NameNotFoundException e)
-            {
-                Toast.makeText(MainActivity.this, "Please install whatsapp app", Toast.LENGTH_SHORT)
-                        .show();
-            }
-            return true;
-            */
-            /*
-            Toast.makeText(MainActivity.this, "app installed.", Toast.LENGTH_SHORT).show();
-            Intent intent2 = new Intent(Intent.ACTION_VIEW, uri);
-            startActivity( intent2 );
-
-            return true;
-            */
-            /*
-            if( URLUtil.isNetworkUrl(uri.toString()) ) {
-                Toast.makeText(MainActivity.this, "isNetworkUrl. = " + uri, Toast.LENGTH_SHORT).show();
-                return false;
-            }
-            if (appInstalledOrNot(uri.toString())) {
-                Toast.makeText(MainActivity.this, "app installed.", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                startActivity( intent );
-            } else {
-                Toast.makeText(MainActivity.this, "app is not installed.", Toast.LENGTH_SHORT).show();
-                // do something if app is not installed
-            }
-            return true;*/
 
         }
 
