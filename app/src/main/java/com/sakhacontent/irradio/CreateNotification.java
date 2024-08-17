@@ -36,7 +36,7 @@ public class CreateNotification {
                 NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
                 MediaSessionCompat mediaSessionCompat = new MediaSessionCompat(context, "tag");
 
-                Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.t1);
+                Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.bg);//R.drawable.t1);
 
                 PendingIntent pendingIntentPrevious;
                 int drw_previous;
