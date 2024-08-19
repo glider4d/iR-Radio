@@ -581,7 +581,7 @@ public class MainActivity extends AppCompatActivity implements Playable{//, Runn
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
 
             final Uri uri = request.getUrl();
-            if (uri.toString().equals("https://radioir.ru/")) {
+            if (uri.toString().equals(/*"https://radioir.ru/"*/" https://radio.dataworld.pro/")) {
 //                Toast.makeText(MainActivity.this, "." + uri.toString(), Toast.LENGTH_SHORT).show();
                 return false;
             }
